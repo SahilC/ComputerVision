@@ -60,9 +60,9 @@ Mat1b chromaKey( const Mat3b & imageBGR, Scalar chromaBGR, double tInner, double
 	return mask;
 }
 
-Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, Scalar bgColor ) {
+Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, const Mat3b & image_bkgrd ) {
 	Size imageSize = image.size();
-	const Vec3b bgColorVec( bgColor[ 0 ], bgColor[ 1 ], bgColor[ 2 ] );
+	// const Vec3b bgColorVec( bgColor[ 0 ], bgColor[ 1 ], bgColor[ 2 ] );
 	Mat3b newImage( image.size() );
 
 	for ( int y = 0; y < imageSize.height; ++y ) {
@@ -72,10 +72,10 @@ Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, Scalar bgColor
 			if ( maskValue >= 255 ) {
 				newImage( y, x ) = image( y, x );
 			} else if ( maskValue <= 0 ) {
-				newImage( y, x ) = bgColorVec;
+				newImage( y, x ) = image_bkgrd(y,x);
 			} else {
 				double alpha = 1. / static_cast< double >( maskValue );
-				newImage( y, x ) = alpha * image( y, x ) + ( 1. - alpha ) * bgColorVec;
+				newImage( y, x ) = alpha * image( y, x ) + ( 1. - alpha ) * image_bkgrd(y,x);
 			}
 		}
 	}
@@ -86,11 +86,13 @@ Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, Scalar bgColor
 
 int main() {
 	string inputFilename = "input.png";
+  string inputFilename_back = "forest.jpg";
 	string maskFilename = "./mask.png";
 	string newBackgroundFilename = "./newBackground.png";
 
 	// Load the input image.
 	Mat3b input = imread( inputFilename, IMREAD_COLOR );
+  Mat3b input_bck = imread( inputFilename_back, IMREAD_COLOR );
 
 	if ( input.empty() ) {
 		cerr << "Input file <" << inputFilename << "> could not be loaded ... " << endl;
@@ -104,7 +106,7 @@ int main() {
 	double tOuter = 170.;
 	Mat1b mask = chromaKey( input, chroma, tInner, tOuter );
 
-	Mat3b newBackground = replaceBackground( input, mask, Scalar( 0, 255, 0, 0 ) );
+	Mat3b newBackground = replaceBackground( input, mask, input_bck);
 
 	imwrite( maskFilename, mask );
 	imwrite( newBackgroundFilename, newBackground );
