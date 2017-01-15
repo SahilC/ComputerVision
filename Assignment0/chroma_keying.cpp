@@ -85,22 +85,41 @@ Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, const Mat3b & 
 
 int mixVideos() {
     string inputFilename_back = "forest.jpg";
+    Mat3b input_bck = imread( inputFilename_back, IMREAD_COLOR );
     VideoCapture cap("/home/sahil/Code/ComputerVision/Assignment0/dino2.mp4");
-    if( !cap.isOpened()){
+
+    VideoCapture cap2("/home/sahil/Code/ComputerVision/Assignment0/2d.mp4");
+    if( !cap.isOpened() && !cap2.isOpened()){
          cout << "Cannot open the video file" << endl;
          return -1;
     }
 
     double count = cap.get(CV_CAP_PROP_FRAME_COUNT); //get the frame count
     namedWindow("MyVideo",CV_WINDOW_AUTOSIZE);
+
     while(1) {
-        Mat frame;
+        Mat frame , background;
         cap.read(frame);
+        cap2.read(background);
+        if(background.empty()) {
+          cap2.set(CV_CAP_PROP_POS_MSEC, 0);
+          cap2.read(background);
+        }
         if(frame.empty())
            break;
-        imshow("MyVideo", frame);
-        waitKey(100);
-        // if(waitKey(0) == 27) break;
+
+        // resize(input_bck, input_bck, frame.size());
+        resize(background, background, frame.size());
+        Scalar chroma( 0, 255, 0, 0 );
+       	double tInner = 100.;
+       	double tOuter = 120.;
+       	Mat1b mask = chromaKey( frame, chroma, tInner, tOuter );
+
+       	Mat3b newBackground = replaceBackground( frame, mask, background);
+        imshow("MyVideo", newBackground);
+        if(waitKey(10) == 27) {
+            break;
+        }
     }
     return 0;
 }
