@@ -83,41 +83,62 @@ Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, const Mat3b & 
 	return newImage;
 }
 
+int mixVideos() {
+    string inputFilename_back = "forest.jpg";
+    VideoCapture cap("/home/sahil/Code/ComputerVision/Assignment0/dino2.mp4");
+    if( !cap.isOpened()){
+         cout << "Cannot open the video file" << endl;
+         return -1;
+    }
+
+    double count = cap.get(CV_CAP_PROP_FRAME_COUNT); //get the frame count
+    namedWindow("MyVideo",CV_WINDOW_AUTOSIZE);
+    while(1) {
+        Mat frame;
+        cap.read(frame);
+        if(frame.empty())
+           break;
+        imshow("MyVideo", frame);
+        waitKey(100);
+        // if(waitKey(0) == 27) break;
+    }
+    return 0;
+}
 
 int main() {
-	string inputFilename = "input.png";
-  string inputFilename_back = "forest.jpg";
-	string maskFilename = "./mask.png";
-	string newBackgroundFilename = "./newBackground.png";
-
-	// Load the input image.
-	Mat3b input = imread( inputFilename, IMREAD_COLOR );
-  Mat3b input_bck = imread( inputFilename_back, IMREAD_COLOR );
-
-	if ( input.empty() ) {
-		cerr << "Input file <" << inputFilename << "> could not be loaded ... " << endl;
-
-		return 1;
-	}
-
-	// Apply the chroma keying and save the output.
-	Scalar chroma( 0, 0, 0, 0 );
-	double tInner = 100.;
-	double tOuter = 170.;
-	Mat1b mask = chromaKey( input, chroma, tInner, tOuter );
-
-	Mat3b newBackground = replaceBackground( input, mask, input_bck);
-
-	imwrite( maskFilename, mask );
-	imwrite( newBackgroundFilename, newBackground );
-
-	namedWindow( "input" );
-	imshow( "input", input );
-	namedWindow( "mask" );
-	imshow( "mask", mask );
-	namedWindow( "new background" );
-	imshow( "new background", newBackground );
-	waitKey( 0 );
+  mixVideos();
+	// string inputFilename = "input_back.png";
+  // string inputFilename_back = "forest.jpg";
+	// string maskFilename = "./mask.png";
+	// string newBackgroundFilename = "./newBackground.png";
+  //
+	// // Load the input image.
+	// Mat3b input = imread( inputFilename, IMREAD_COLOR );
+  // Mat3b input_bck = imread( inputFilename_back, IMREAD_COLOR );
+  //
+	// if ( input.empty() ) {
+	// 	cerr << "Input file <" << inputFilename << "> could not be loaded ... " << endl;
+  //
+	// 	return 1;
+	// }
+  //
+	// Scalar chroma( 0, 255, 0, 0 );
+	// double tInner = 100.;
+	// double tOuter = 170.;
+	// Mat1b mask = chromaKey( input, chroma, tInner, tOuter );
+  //
+	// Mat3b newBackground = replaceBackground( input, mask, input_bck);
+  //
+	// imwrite( maskFilename, mask );
+	// imwrite( newBackgroundFilename, newBackground );
+  //
+	// namedWindow( "input" );
+	// imshow( "input", input );
+	// namedWindow( "mask" );
+	// imshow( "mask", mask );
+	// namedWindow( "new background" );
+	// imshow( "new background", newBackground );
+	// waitKey( 0 );
 
 	return 0;
 }
