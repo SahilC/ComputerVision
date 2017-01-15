@@ -126,38 +126,5 @@ int mixVideos() {
 
 int main() {
   mixVideos();
-	// string inputFilename = "input_back.png";
-  // string inputFilename_back = "forest.jpg";
-	// string maskFilename = "./mask.png";
-	// string newBackgroundFilename = "./newBackground.png";
-  //
-	// // Load the input image.
-	// Mat3b input = imread( inputFilename, IMREAD_COLOR );
-  // Mat3b input_bck = imread( inputFilename_back, IMREAD_COLOR );
-  //
-	// if ( input.empty() ) {
-	// 	cerr << "Input file <" << inputFilename << "> could not be loaded ... " << endl;
-  //
-	// 	return 1;
-	// }
-  //
-	// Scalar chroma( 0, 255, 0, 0 );
-	// double tInner = 100.;
-	// double tOuter = 170.;
-	// Mat1b mask = chromaKey( input, chroma, tInner, tOuter );
-  //
-	// Mat3b newBackground = replaceBackground( input, mask, input_bck);
-  //
-	// imwrite( maskFilename, mask );
-	// imwrite( newBackgroundFilename, newBackground );
-  //
-	// namedWindow( "input" );
-	// imshow( "input", input );
-	// namedWindow( "mask" );
-	// imshow( "mask", mask );
-	// namedWindow( "new background" );
-	// imshow( "new background", newBackground );
-	// waitKey( 0 );
-
 	return 0;
 }
