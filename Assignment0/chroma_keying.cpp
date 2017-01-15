@@ -86,9 +86,9 @@ Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, const Mat3b & 
 int mixVideos() {
     string inputFilename_back = "forest.jpg";
     Mat3b input_bck = imread( inputFilename_back, IMREAD_COLOR );
-    VideoCapture cap("/home/sahil/Code/ComputerVision/Assignment0/dino2.mp4");
+    VideoCapture cap("/home/sahil/Code/ComputerVision/Assignment0/videos/dino.mp4");
 
-    VideoCapture cap2("/home/sahil/Code/ComputerVision/Assignment0/2d.mp4");
+    VideoCapture cap2("/home/sahil/Code/ComputerVision/Assignment0/videos/2d.mp4");
     if( !cap.isOpened() && !cap2.isOpened()){
          cout << "Cannot open the video file" << endl;
          return -1;
