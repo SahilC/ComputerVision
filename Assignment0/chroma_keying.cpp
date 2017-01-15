@@ -1,77 +1,121 @@
+
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+
+#include <cassert>
+#include <cmath>
 #include <iostream>
 #include <string>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 using namespace std;
 using namespace cv;
 
-int main(int argc, char** argv) {
-   
-	if (argc != 4) {
-        cout << "Not enough parameters" << endl;
-        return -1;
-    }
+Scalar bgr2ycrcb( Scalar bgr ) {
+	double R = bgr[ 2 ];
+	double G = bgr[ 1 ];
+	double B = bgr[ 0 ];
+	double delta = 128; // Note: change this value if image type isn't CV_8U.
 
-    const string source      = argv[1];           // the source file name
-    const bool askOutputType = argv[3][0] =='Y';  // If false it will use the inputs codec type
+	double Y  = 0.299 * R + 0.587 * G + 0.114 * B;
+	double Cr = ( R - Y ) * 0.713 + delta;
+	double Cb = ( B - Y ) * 0.564 + delta;
 
-    VideoCapture inputVideo(source);              // Open input
-    if (!inputVideo.isOpened())
-    {
-        cout  << "Could not open the input video: " << source << endl;
-        return -1;
-    }
-
-    string::size_type pAt = source.find_last_of('.');                  // Find extension point
-    const string NAME = source.substr(0, pAt) + argv[2][0] + ".avi";   // Form the new name with container
-    int ex = static_cast<int>(inputVideo.get(CV_CAP_PROP_FOURCC));     // Get Codec Type- Int form
-
-    // Transform from int to char via Bitwise operators
-    char EXT[] = {(char)(ex & 0XFF) , (char)((ex & 0XFF00) >> 8),(char)((ex & 0XFF0000) >> 16),(char)((ex & 0XFF000000) >> 24), 0};
-
-    Size S = Size((int) inputVideo.get(CV_CAP_PROP_FRAME_WIDTH),    // Acquire input size
-                  (int) inputVideo.get(CV_CAP_PROP_FRAME_HEIGHT));
-
-    VideoWriter outputVideo;                                        // Open the output
-    if (askOutputType)
-        outputVideo.open(NAME, ex=-1, inputVideo.get(CV_CAP_PROP_FPS), S, true);
-    else
-        outputVideo.open(NAME, ex, inputVideo.get(CV_CAP_PROP_FPS), S, true);
-
-    if (!outputVideo.isOpened()) {
-        cout  << "Could not open the output video for write: " << source << endl;
-        return -1;
-    }
-
-    cout << "Input frame resolution: Width=" << S.width << "  Height=" << S.height
-         << " of nr#: " << inputVideo.get(CV_CAP_PROP_FRAME_COUNT) << endl;
-    cout << "Input codec type: " << EXT << endl;
-
-    int channel = 2; // Select the channel to save
-    switch(argv[2][0]){
-    case 'R' : channel = 2; break;
-    case 'G' : channel = 1; break;
-    case 'B' : channel = 0; break;
-    }
-    Mat src, res;
-    vector<Mat> spl;
-
-    for(;;) //Show the image captured in the window and repeat
-    {
-        inputVideo >> src;              // read
-        if (src.empty()) break;         // check if at end
-
-        split(src, spl);                // process - extract only the correct channel
-        for (int i =0; i < 3; ++i)
-            if (i != channel)
-                spl[i] = Mat::zeros(S, spl[0].type());
-       merge(spl, res);
-
-       //outputVideo.write(res); //save or
-       outputVideo << res;
-    }
- 
-    return 0;
+	return Scalar( Y, Cr, Cb, 0 /* ignored */ );
 }
 
+Mat1b chromaKey( const Mat3b & imageBGR, Scalar chromaBGR, double tInner, double tOuter ) {
+
+	assert( tInner <= tOuter );
+
+	assert( ! imageBGR.empty() );
+	Size imageSize = imageBGR.size();
+	Mat3b imageYCrCb;
+	cvtColor( imageBGR, imageYCrCb, COLOR_BGR2YCrCb );
+	Scalar chromaYCrCb = bgr2ycrcb( chromaBGR ); // Convert a single BGR value to YCrCb.
+
+	Mat1b mask = Mat1b::zeros( imageSize );
+	const Vec3d key( chromaYCrCb[ 0 ], chromaYCrCb[ 1 ], chromaYCrCb[ 2 ] );
+
+	for ( int y = 0; y < imageSize.height; ++y ) {
+		for ( int x = 0; x < imageSize.width; ++x ) {
+			const Vec3d color( imageYCrCb( y, x )[ 0 ], imageYCrCb( y, x )[ 1 ], imageYCrCb( y, x )[ 2 ] );
+			double distance = norm( key - color );
+
+			if ( distance < tInner ) {
+				// Current pixel is fully part of the background.
+				mask( y, x ) = 0;
+			} else if ( distance > tOuter ) {
+				mask( y, x ) = 255;
+			}	else {
+				double d1 = distance - tInner;
+				double d2 = tOuter   - tInner;
+				uint8_t alpha = static_cast< uint8_t >( 255. * ( d1 / d2 ) );
+
+				mask( y, x ) = alpha;
+			}
+		}
+	}
+
+	return mask;
+}
+
+Mat3b replaceBackground( const Mat3b & image, const Mat1b & mask, Scalar bgColor ) {
+	Size imageSize = image.size();
+	const Vec3b bgColorVec( bgColor[ 0 ], bgColor[ 1 ], bgColor[ 2 ] );
+	Mat3b newImage( image.size() );
+
+	for ( int y = 0; y < imageSize.height; ++y ) {
+		for ( int x = 0; x < imageSize.width; ++x ) {
+			uint8_t maskValue = mask( y, x );
+
+			if ( maskValue >= 255 ) {
+				newImage( y, x ) = image( y, x );
+			} else if ( maskValue <= 0 ) {
+				newImage( y, x ) = bgColorVec;
+			} else {
+				double alpha = 1. / static_cast< double >( maskValue );
+				newImage( y, x ) = alpha * image( y, x ) + ( 1. - alpha ) * bgColorVec;
+			}
+		}
+	}
+
+	return newImage;
+}
+
+
+int main() {
+	string inputFilename = "input.png";
+	string maskFilename = "./mask.png";
+	string newBackgroundFilename = "./newBackground.png";
+
+	// Load the input image.
+	Mat3b input = imread( inputFilename, IMREAD_COLOR );
+
+	if ( input.empty() ) {
+		cerr << "Input file <" << inputFilename << "> could not be loaded ... " << endl;
+
+		return 1;
+	}
+
+	// Apply the chroma keying and save the output.
+	Scalar chroma( 0, 0, 0, 0 );
+	double tInner = 100.;
+	double tOuter = 170.;
+	Mat1b mask = chromaKey( input, chroma, tInner, tOuter );
+
+	Mat3b newBackground = replaceBackground( input, mask, Scalar( 0, 255, 0, 0 ) );
+
+	imwrite( maskFilename, mask );
+	imwrite( newBackgroundFilename, newBackground );
+
+	namedWindow( "input" );
+	imshow( "input", input );
+	namedWindow( "mask" );
+	imshow( "mask", mask );
+	namedWindow( "new background" );
+	imshow( "new background", newBackground );
+	waitKey( 0 );
+
+	return 0;
+}
