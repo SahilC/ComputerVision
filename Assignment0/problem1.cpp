@@ -7,9 +7,9 @@ using namespace cv;
 
 int main() {
     Mat frame;
-    VideoCapture cap("frame_%06d.jpg");
+    VideoCapture cap("webframe%06d.jpg");
 
-    VideoWriter writer("created.avi", CV_FOURCC('M','J','P','G'), 30, Size(640, 360));
+    VideoWriter writer("webcam_created.avi", CV_FOURCC('M','J','P','G'), 30, Size(640, 480));
     int i = 0;
     while(1) {
         cout << i << endl;
