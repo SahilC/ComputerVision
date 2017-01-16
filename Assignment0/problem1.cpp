@@ -1,15 +1,20 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <stdio.h>
 
 using namespace std;
 using namespace cv;
 
-int main() {
+int main(int argc, char** argv) {
     Mat frame;
     VideoCapture cap("webframe%06d.jpg");
-
-    VideoWriter writer("webcam_created.avi", CV_FOURCC('M','J','P','G'), 30, Size(640, 480));
+    int fps;
+    if(argc > 1) {
+        cout << argv[1]<<endl;
+        fps = atoi(argv[1]);
+    } else {
+      fps = 30;
+    }
+    VideoWriter writer("webcam_created.avi", CV_FOURCC('M','J','P','G'), fps, Size(640, 480));
     int i = 0;
     while(1) {
         cout << i << endl;
