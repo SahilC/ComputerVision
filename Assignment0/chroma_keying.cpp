@@ -89,14 +89,15 @@ int mixVideos() {
     VideoCapture cap("/home/sahil/Code/ComputerVision/Assignment0/videos/dino.mp4");
 
     VideoCapture cap2("/home/sahil/Code/ComputerVision/Assignment0/videos/2d.mp4");
+    VideoWriter writer("dino_created.avi", CV_FOURCC('M','J','P','G'), 30, Size(640, 480));
     if( !cap.isOpened() && !cap2.isOpened()){
          cout << "Cannot open the video file" << endl;
          return -1;
     }
 
-    double count = cap.get(CV_CAP_PROP_FRAME_COUNT); //get the frame count
+    // double count = cap.get(CV_CAP_PROP_FRAME_COUNT); //get the frame count
     namedWindow("MyVideo",CV_WINDOW_AUTOSIZE);
-
+    cap.set(CV_CAP_PROP_POS_MSEC, 10000);
     while(1) {
         Mat frame , background;
         cap.read(frame);
@@ -117,6 +118,7 @@ int mixVideos() {
 
        	Mat3b newBackground = replaceBackground( frame, mask, background);
         imshow("MyVideo", newBackground);
+        writer.write(newBackground);
         if(waitKey(10) == 27) {
             break;
         }
