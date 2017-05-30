@@ -1,4 +1,5 @@
 /* Includes */
+#include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <vector>
@@ -6,32 +7,37 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv/cv.h>
+#include <opencv2/xfeatures2d.hpp>
 #include <opencv/highgui.h>
 #include "opencv2/calib3d/calib3d.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/xfeatures2d.hpp>
+
 
 
 /* Namespaces */
 using namespace cv;
+using namespace cv::xfeatures2d;
 using namespace std;
 
 /* Main */
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[]) {
 
     // Read source image.
     Mat img_object = imread("IMG_20120708_180236.jpg",CV_LOAD_IMAGE_GRAYSCALE);
     Mat img_scene = imread( "IMG_20120718_182225.jpg",CV_LOAD_IMAGE_GRAYSCALE);
-    Ptr<ORB> detector = ORB::create(100, 2, 8, 31, 0, 2, ORB::HARRIS_SCORE, 31, 20);
+    // Ptr<xfeatures2d::SURF> detector = xfeatures2d::SURF::create(100);
+    Ptr<Feature2D> surf = SIFT::create(400);
     // SurfFeatureDetector detector( minHessian );
 
     vector<KeyPoint> keypoints_object, keypoints_scene;
 
     Mat descriptors_object, descriptors_scene;
 
-    detector -> detectAndCompute( img_object,noArray(), keypoints_object, descriptors_object );
-    detector -> detectAndCompute( img_scene, noArray(), keypoints_scene, descriptors_scene );
+    surf -> detectAndCompute( img_object,noArray(), keypoints_object, descriptors_object );
+    surf -> detectAndCompute( img_scene, noArray(), keypoints_scene, descriptors_scene );
 
     // //-- Step 2: Calculate descriptors (feature vectors)
     // Ptr<DescriptorExtractor> extractor = DescriptorExtractor::create(ORB);
@@ -46,7 +52,7 @@ int main(int argc, char* argv[]){
     vector< DMatch > matches;
     matcher.match( descriptors_object, descriptors_scene, matches );
 
-    double max_dist = 0; double min_dist = 100;
+    double max_dist = 0; double min_dist = 200;
 
     //-- Quick calculation of max and min distances between keypoints
     for( int i = 0; i < descriptors_object.rows; i++ )
@@ -74,12 +80,35 @@ int main(int argc, char* argv[]){
     vector<Point2f> src;
     vector<Point2f> dst;
 
-    for( int i = 0; i < good_matches.size(); i++ )
-    {
+    for( int i = 0; i < good_matches.size(); i++ ) {
       //-- Get the keypoints from the good matches
       src.push_back( keypoints_object[ good_matches[i].queryIdx ].pt );
       dst.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
     }
+
+    Mat h = findHomography(src, dst, CV_RANSAC);
+
+    std::vector<Point2f> obj_corners(4);
+    obj_corners[0] = cvPoint(0,0); 
+    obj_corners[1] = cvPoint( img_object.cols, 0 );
+    obj_corners[2] = cvPoint( img_object.cols, img_object.rows ); 
+    obj_corners[3] = cvPoint( 0, img_object.rows );
+    std::vector<Point2f> scene_corners(4);
+
+    perspectiveTransform( obj_corners, scene_corners, h);
+
+    //-- Draw lines between the corners (the mapped object in the scene - image_2 )
+    line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
+    line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+
+    //-- Show detected matches
+    Size size(1024,512);//the dst image size,e.g.100x100
+    Mat dstr;//dst image
+    resize(img_matches,dstr,size);
+    imshow("Warped Source Image", dstr);
+    waitKey(0);
 
     // vector<Point2f> src; 	/* should be filled */
     // vector<Point2f> dst;	/* should be filled */
@@ -98,9 +127,6 @@ int main(int argc, char* argv[]){
     /* Create output mask. */
     tempMask = Mat(npoints, 1, CV_8U);
 
-#ifdef __SSE2__
-	// SSE version here
-#else
     /**
      * Make use of the RHO estimator API.
      *
@@ -145,7 +171,6 @@ int main(int argc, char* argv[]){
      */
 
     rhoRefCFini(p);
-#endif
 
     /* Convert float homography to double precision. */
     tmpH.convertTo(_H, CV_64FC1);
@@ -154,6 +179,7 @@ int main(int argc, char* argv[]){
     for(int k=0;k<npoints;k++){
         tempMask.data[k] = !!tempMask.data[k];
     }
+    
     //tempMask.copyTo(_tempMask);
 
     return result;
