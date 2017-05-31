@@ -20,6 +20,9 @@ void readme();
 int main( int argc, char** argv )
 {
 
+  // double start2=(double)getTickCount();
+  // double start=(double)getTickCount();
+
   Mat img_scene = imread( "IMG_20120708_180236.jpg", IMREAD_GRAYSCALE );
   Mat img_object= imread( "IMG_20120718_182225.jpg", IMREAD_GRAYSCALE );
 
@@ -28,17 +31,20 @@ int main( int argc, char** argv )
 
   //-- Step 1: Detect and calculate the keypoints and descriptors using SURF Detector
   std::vector<KeyPoint> keypoints_object, keypoints_scene;
-  int surfNFeatures = 1000;
+  int surfNFeatures = 400;
   //-- Note: need OpenCV3 and opencv_contrib to use SurfFeatureDetector
-  Ptr<cv::xfeatures2d::SurfFeatureDetector> extractor = cv::xfeatures2d::SurfFeatureDetector::create(surfNFeatures, 6, 2);
+  Ptr<cv::xfeatures2d::SurfFeatureDetector> extractor = cv::xfeatures2d::SurfFeatureDetector::create(surfNFeatures, 5, 2);
 
   Mat descriptors_object, descriptors_scene;
 
   extractor->detectAndCompute( img_object, noArray(), keypoints_object, descriptors_object );
   extractor->detectAndCompute( img_scene, noArray(), keypoints_scene, descriptors_scene );
+  // start= ((double)getTickCount() - start)/getTickFrequency(); 
+  // cout<<"time spent in executing the features2d ="<<start<<endl;
+  // start=(double)getTickCount();
 
   //-- Step 2: Matching descriptor vectors using FLANN matcher
-  double ratio = 0.8;
+  double ratio = 0.7;
   vector< vector<DMatch> > nnMatches;
   vector<DMatch> good_matches;
 
@@ -50,6 +56,9 @@ int main( int argc, char** argv )
           good_matches.push_back(nnMatches[k][0]);
       }
   } 
+  // start= ((double)getTickCount() - start)/getTickFrequency(); 
+  // cout<<"time spent in executing the matches ="<<start<<endl;
+  // start=(double)getTickCount();
 
   // printf("-- Max dist : %f \n", max_dist );
   // printf("-- Min dist : %f \n", min_dist );
@@ -62,10 +71,10 @@ int main( int argc, char** argv )
   //    { good_matches.push_back( matches[i]); }
   // }
 
-  Mat img_matches;
-  drawMatches( img_object, keypoints_object, img_scene, keypoints_scene,
-               good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-               std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+  // Mat img_matches;
+  // drawMatches( img_object, keypoints_object, img_scene, keypoints_scene,
+  //              good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+  //              std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
   //-- Localize the object
   std::vector<Point2f> obj;
@@ -78,7 +87,15 @@ int main( int argc, char** argv )
     scene.push_back( keypoints_scene[ good_matches[i].trainIdx ].pt );
   }
 
+  // start= ((double)getTickCount() - start)/getTickFrequency();
+  // cout<<"time spent in executing the homo ="<<start<<endl;
+  // start=(double)getTickCount();
+  
   Mat H = findHomography( obj, scene, RANSAC );
+
+  // start= ((double)getTickCount() - start)/getTickFrequency(); 
+  // cout<<"time spent in executing the code ="<<start<<endl;
+  // start=(double)getTickCount();
 
   //-- Get the corners from the image_1 ( the object to be "detected" )
   std::vector<Point2f> obj_corners(4);
@@ -87,6 +104,13 @@ int main( int argc, char** argv )
   std::vector<Point2f> scene_corners(4);
 
   perspectiveTransform( obj_corners, scene_corners, H);
+  // start= ((double)getTickCount() - start)/getTickFrequency(); 
+  // cout<<"time spent in executing the last ="<<start<<endl;
+
+  // start2= ((double)getTickCount() - start2)/getTickFrequency();
+  // cout<<"time spent in executing ="<<start2<<endl;
+
+
 
   // std::vector<cv::Point> fillContSingle;
   //add all points of the contour to the vector
