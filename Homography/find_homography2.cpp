@@ -10,6 +10,7 @@
 
 #include <opencv2/imgproc.hpp>
 
+using namespace std;
 using namespace cv;
 using namespace cv::xfeatures2d;
 
@@ -19,8 +20,8 @@ void readme();
 int main( int argc, char** argv )
 {
 
-  Mat img_object = imread( "IMG_20120708_180236.jpg", IMREAD_GRAYSCALE );
-  Mat img_scene = imread( "IMG_20120718_182225.jpg", IMREAD_GRAYSCALE );
+  Mat img_scene = imread( "IMG_20120708_180236.jpg", IMREAD_GRAYSCALE );
+  Mat img_object= imread( "IMG_20120718_182225.jpg", IMREAD_GRAYSCALE );
 
   if( !img_object.data || !img_scene.data )
   { std::cout<< " --(!) Error reading images " << std::endl; return -1; }
@@ -29,7 +30,7 @@ int main( int argc, char** argv )
   std::vector<KeyPoint> keypoints_object, keypoints_scene;
   int surfNFeatures = 1000;
   //-- Note: need OpenCV3 and opencv_contrib to use SurfFeatureDetector
-  Ptr<cv::xfeatures2d::SurfFeatureDetector> extractor = cv::xfeatures2d::SurfFeatureDetector::create(surfNFeatures, 5, 2);
+  Ptr<cv::xfeatures2d::SurfFeatureDetector> extractor = cv::xfeatures2d::SurfFeatureDetector::create(surfNFeatures, 6, 2);
 
   Mat descriptors_object, descriptors_scene;
 
@@ -41,7 +42,7 @@ int main( int argc, char** argv )
   std::vector< DMatch > matches;
   matcher.match( descriptors_object, descriptors_scene, matches );
 
-  double max_dist = 0; double min_dist = 100;
+  double max_dist = 0; double min_dist = 50;
 
   //-- Quick calculation of max and min distances between keypoints
   for( int i = 0; i < descriptors_object.rows; i++ )
@@ -57,7 +58,7 @@ int main( int argc, char** argv )
   std::vector< DMatch > good_matches;
 
   for( int i = 0; i < descriptors_object.rows; i++ )
-  { if( matches[i].distance < 3*min_dist )
+  { if( matches[i].distance < 5*min_dist )
      { good_matches.push_back( matches[i]); }
   }
 
@@ -87,18 +88,40 @@ int main( int argc, char** argv )
 
   perspectiveTransform( obj_corners, scene_corners, H);
 
-  //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-  line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
-  line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-  line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-  line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+  // std::vector<cv::Point> fillContSingle;
+  //add all points of the contour to the vector
+  // fillContSingle.push_back(cv::Point(x_coord,y_coord));
 
+  // std::vector<std::vector<cv::Point> > fillContAll;
+  //fill the single contour 
+  //(one could add multiple other similar contours to the vector)
+  // fillContAll.push_back(fillContSingle);
+
+  // cv::fillPoly( img_scene, scene_corners, cv::Scalar(0,128,0));
+
+  //-- Draw lines between the corners (the mapped object in the scene - image_2 )
+  // line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
+  // line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+  // line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+  // line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+
+  vector<Point> contour;
+  contour.push_back(scene_corners[0] );
+  contour.push_back(scene_corners[1] );
+  contour.push_back(scene_corners[2] );
+  contour.push_back(scene_corners[3] );
+
+  const cv::Point *pts = (const cv::Point*) Mat(contour).data;
+  int npts = Mat(contour).rows;
+
+  // polylines(img_scene, contour, pts, npts, true, Scalar(255, 255, 255),3 )
+  polylines(img_scene, &pts,&npts, 1,true, Scalar(255,0,0), 3, CV_AA, 0);
   //-- Show detected matches
-//  imshow( "Good Matches & Object detection", img_matches );
+  //  imshow( "Good Matches & Object detection", img_matches );
   Size size(1024,512);//the dst image size,e.g.100x100
-   Mat dstr;//dst image
-   resize(img_matches,dstr,size);
-   imshow("Warped Source Image", dstr);
+  Mat dstr;//dst image
+  resize(img_scene,dstr,size);
+  imshow("Warped Source Image", dstr);
   waitKey(0);
   return 0;
   }
