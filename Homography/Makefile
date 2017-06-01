@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -g -Wall
-SRCS = find_homography2.cpp
+SRCS = test.cpp
 PROG = find
 
 OPENCV = `pkg-config --cflags --libs opencv`
