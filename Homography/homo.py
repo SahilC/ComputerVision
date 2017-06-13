@@ -79,8 +79,9 @@ if __name__ == '__main__' :
 
                 _, contours,_ = cv2.findContours(mask,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 
-                # x,y,w,h = cv2.boundingRect(contours[0])
+                x,y,w,h = cv2.boundingRect(contours[0])
 
+                # mask, bgdModel, fgdModel = cv2.grabCut(im_dst2, mask, (x,y,w,h), bgdModel, fgdModel, 35, cv2.GC_INIT_WITH_RECT)
                 mask, bgdModel, fgdModel = cv2.grabCut(im_dst2, mask, None, bgdModel, fgdModel, 35, cv2.GC_INIT_WITH_MASK)
                 mask = np.where((mask==2)|(mask==0),0,1).astype('uint8')
                 im_dst = im_dst*mask
